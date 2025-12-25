@@ -6,13 +6,30 @@ class Algo:
         self.grid_size = grid_size
         self.dim = dim
         self.to = to
-        self.w1 = None
-        self.w2 = None
-        self.w3 = None
+        self.w1 = None # 経路長に関する重み 
+        self.w2 = None # 交差数に関する重み
+        self.w3 = None # 長さ整合に関する重み
+        self.w4 = None # 曲げ回数に関する重み
     
 
     # --- 評価関数（3目的の加重平均）---
     def _evaluate_path(self, path, best_paths):
+        """
+        目的関数（論文実装）
+
+        - 経路長
+        - 交差数
+        - 長さ整合
+
+        """
+        # # for debug
+        # print('len(best_paths) =', len(best_paths))
+        # print('[_evaluate_path] path =', path)
+        # print('[_evaluate_path] best_paths[0] =', best_paths[0])
+        # print('[_evaluate_path] best_paths[1] =', best_paths[1])
+        # print('[_evaluate_path] best_paths[2] =', best_paths[2])
+        # print()
+
         length = len(path)
         # 他の経路と交差したノード数
         cross_count = sum(1 for node in path for other in best_paths if other and node in other)
@@ -22,6 +39,52 @@ class Algo:
         score = (self.w1 * length + self.w2 * cross_count + self.w3 * length_diff) / (self.w1 + self.w2 + self.w3)
         return score
     
+
+    def _evaluate_path_cumtom_1(self, path, best_paths):
+        """
+        カスタム目的関数その1。
+        「曲げ回数の最小化」も目的関数に含めた。
+    
+        - 経路長
+        - 交差数
+        - 長さ整合
+        - 曲げ回数
+        """
+        length = len(path)
+        # 他の経路と交差したノード数
+        cross_count = sum(1 for node in path for other in best_paths if other and node in other)
+        # 他の経路との長さ差の2乗の合計（長さ整合）
+        length_diff = sum((length - len(p)) ** 2 for p in best_paths if p)
+        # pathの曲がり回数
+        corner_count = self.counting_corner(path)
+        # 加重平均としてスコアを返す
+        score = (self.w1 * length + self.w2 * cross_count + self.w3 * length_diff + self.w4 * corner_count) / (self.w1 + self.w2 + self.w3 + self.w4)
+        return score
+
+
+    def _evaluate_path_cumtom_2(self, path, best_paths):
+        """
+        カスタム目的関数その2。
+        「高さ(z座標)の最大値の最小化」も目的関数に含めた。
+    
+        - 経路長
+        - 交差数
+        - 長さ整合
+        - 高さ(z座標)の最大値
+        """
+        length = len(path)
+        # 他の経路と交差したノード数
+        cross_count = sum(1 for node in path for other in best_paths if other and node in other)
+        # 他の経路との長さ差の2乗の合計（長さ整合）
+        length_diff = sum((length - len(p)) ** 2 for p in best_paths if p)
+        # 高さ(z座標)の最大値
+        z_max = None
+
+        # 加重平均としてスコアを返す
+        score = (self.w1 * length + self.w2 * cross_count + self.w3 * length_diff + self.w4 * z_max) / (self.w1 + self.w2 + self.w3 + self.w4)
+        return score
+
+
 
     # --- 経路生成関数（ACO風ランダム探索） ---W
     def _generate_path(self, start, goal, pheromone, occupied, alpha=2, beta=2):
@@ -49,10 +112,11 @@ class Algo:
     
 
     # --- ACOによる等長・非交差ルーティング本体 ---
-    def equal_length_routing(self, pairs, max_iter=100, num_ants=30, w1=10, w2=45, w3=45):
+    def equal_length_routing(self, pairs, max_iter=100, num_ants=30, w1=10, w2=45, w3=45, w4=None):
         self.w1 = w1
         self.w2 = w2
         self.w3 = w3
+        self.w4 = w4
 
         n = self.grid_size
         if self.dim == 2:
@@ -82,9 +146,14 @@ class Algo:
 
                     # 経路生成 → 評価
                     path = self._generate_path(start, goal, pheromones[i], occupied)
+
+                    # # for debug
+                    # print(f"start = {start}, goal = {goal}")
+
                     if path:
-                        # score = evaluate_path(path, best_paths)
-                        score = self._evaluate_path(path, best_paths)
+                        # score = self._evaluate_path(path, best_paths) # 論文実装
+                        score = self._evaluate_path_cumtom_1(path, best_paths) # カスタム目的関数その１
+                        # score = self._evaluate_path_cumtom_2(path, best_paths) # カスタム目的関数その２
                         paths.append((score, path))
 
                 # 最良経路を採用・フェロモン更新
@@ -101,3 +170,42 @@ class Algo:
                 return best_paths
 
         return best_paths
+    
+
+    def nodenum_to_coord(self, nodenum):
+        z = nodenum // (self.grid_size * self.grid_size)
+        rem = nodenum % (self.grid_size * self.grid_size)
+        y = rem // self.grid_size
+        x = rem % self.grid_size
+        return x, y, z
+
+
+    def counting_corner(self, path):
+        """
+        pathの曲がり回数をカウントする
+        """
+        corner_count = 0
+        path_coordinates = []
+        for p in path:
+            x_, y_, z_ = self.nodenum_to_coord(p)
+            path_coordinates.append((x_, y_, z_))
+
+        for i in range(len(path_coordinates)):
+            if i == 0 or i == len(path_coordinates)-1:
+                # nop
+                pass
+            else:
+                vec_1_x = path_coordinates[i][0] - path_coordinates[i-1][0]
+                vec_1_y = path_coordinates[i][1] - path_coordinates[i-1][1]
+                vec_1_z = path_coordinates[i][2] - path_coordinates[i-1][2]
+                vec_1 = (vec_1_x, vec_1_y, vec_1_z)
+
+                vec_2_x = path_coordinates[i+1][0] - path_coordinates[i][0]
+                vec_2_y = path_coordinates[i+1][1] - path_coordinates[i][1]
+                vec_2_z = path_coordinates[i+1][2] - path_coordinates[i][2]
+                vec_2 = (vec_2_x, vec_2_y, vec_2_z)
+
+                if vec_1 != vec_2:
+                    corner_count += 1
+    
+        return corner_count

@@ -176,5 +176,3 @@ class Graph_3d:
         y = rem // self.grid_size
         x = rem % self.grid_size
         return x, y, z
-
-
