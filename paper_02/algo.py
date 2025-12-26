@@ -2,10 +2,11 @@ import numpy as np
 import random
 
 class Algo:
-    def __init__(self, grid_size, dim, to):
+    def __init__(self, grid_size, dim, to, algo_name):
         self.grid_size = grid_size
         self.dim = dim
         self.to = to
+        self.algo_name = algo_name
         self.w1 = None # 経路長に関する重み 
         self.w2 = None # 交差数に関する重み
         self.w3 = None # 長さ整合に関する重み
@@ -151,9 +152,15 @@ class Algo:
                     # print(f"start = {start}, goal = {goal}")
 
                     if path:
-                        # score = self._evaluate_path(path, best_paths) # 論文実装
-                        score = self._evaluate_path_cumtom_1(path, best_paths) # カスタム目的関数その１
-                        # score = self._evaluate_path_cumtom_2(path, best_paths) # カスタム目的関数その２
+                        match self.algo_name:
+                            case "original":
+                                score = self._evaluate_path(path, best_paths) # 論文実装
+                            case "add_corner_constraint":
+                                score = self._evaluate_path_cumtom_1(path, best_paths) # カスタム目的関数その１
+                            case "XXXX":
+                                score = self._evaluate_path_cumtom_2(path, best_paths) # カスタム目的関数その２
+                            case _:
+                                assert False
                         paths.append((score, path))
 
                 # 最良経路を採用・フェロモン更新
