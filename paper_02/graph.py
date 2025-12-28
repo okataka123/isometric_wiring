@@ -157,7 +157,7 @@ class Graph_3d:
                 for row in range(obs_size):
                     for col in range(obs_size):
                         add_point = bp + layer*self.grid_size*self.grid_size + row*self.grid_size + col
-                        print('add_point =', add_point)
+                        # print('add_point =', add_point)
                         obs.append(add_point)
 
             # 重複ノードを除外する。
@@ -176,3 +176,34 @@ class Graph_3d:
         y = rem // self.grid_size
         x = rem % self.grid_size
         return x, y, z
+    
+
+    def counting_corner(self, path):
+        """
+        pathの曲がり回数をカウントする
+        """
+        corner_count = 0
+        path_coordinates = []
+        for p in path:
+            x_, y_, z_ = self.nodenum_to_coord(p)
+            path_coordinates.append((x_, y_, z_))
+
+        for i in range(len(path_coordinates)):
+            if i == 0 or i == len(path_coordinates)-1:
+                # nop
+                pass
+            else:
+                vec_1_x = path_coordinates[i][0] - path_coordinates[i-1][0]
+                vec_1_y = path_coordinates[i][1] - path_coordinates[i-1][1]
+                vec_1_z = path_coordinates[i][2] - path_coordinates[i-1][2]
+                vec_1 = (vec_1_x, vec_1_y, vec_1_z)
+
+                vec_2_x = path_coordinates[i+1][0] - path_coordinates[i][0]
+                vec_2_y = path_coordinates[i+1][1] - path_coordinates[i][1]
+                vec_2_z = path_coordinates[i+1][2] - path_coordinates[i][2]
+                vec_2 = (vec_2_x, vec_2_y, vec_2_z)
+
+                if vec_1 != vec_2:
+                    corner_count += 1
+    
+        return corner_count

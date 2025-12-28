@@ -2,10 +2,9 @@ import numpy as np
 import random
 
 class Algo:
-    def __init__(self, grid_size, dim, to, algo_name):
-        self.grid_size = grid_size
+    def __init__(self, graph, dim, algo_name):
+        self.graph = graph
         self.dim = dim
-        self.to = to
         self.algo_name = algo_name
         self.w1 = None # 経路長に関する重み 
         self.w2 = None # 交差数に関する重み
@@ -57,7 +56,8 @@ class Algo:
         # 他の経路との長さ差の2乗の合計（長さ整合）
         length_diff = sum((length - len(p)) ** 2 for p in best_paths if p)
         # pathの曲がり回数
-        corner_count = self.counting_corner(path)
+        # corner_count = self.counting_corner(path)
+        corner_count = self.graph.counting_corner(path)
         # 加重平均としてスコアを返す
         score = (self.w1 * length + self.w2 * cross_count + self.w3 * length_diff + self.w4 * corner_count) / (self.w1 + self.w2 + self.w3 + self.w4)
         return score
@@ -94,7 +94,8 @@ class Algo:
         visited = set([current])
 
         while current != goal:
-            neighbors = [v for v in self.to[current] if v not in visited]
+            # neighbors = [v for v in self.to[current] if v not in visited]
+            neighbors = [v for v in self.graph.to[current] if v not in visited]
             if not neighbors:
                 return []  # 行き止まり
 
@@ -119,7 +120,7 @@ class Algo:
         self.w3 = w3
         self.w4 = w4
 
-        n = self.grid_size
+        n = self.graph.grid_size
         if self.dim == 2:
             pheromones = [np.ones(n * n) * 0.1 for _ in pairs]  # 初期フェロモン
         elif self.dim == 3:
@@ -177,42 +178,3 @@ class Algo:
                 return best_paths
 
         return best_paths
-    
-
-    def nodenum_to_coord(self, nodenum):
-        z = nodenum // (self.grid_size * self.grid_size)
-        rem = nodenum % (self.grid_size * self.grid_size)
-        y = rem // self.grid_size
-        x = rem % self.grid_size
-        return x, y, z
-
-
-    def counting_corner(self, path):
-        """
-        pathの曲がり回数をカウントする
-        """
-        corner_count = 0
-        path_coordinates = []
-        for p in path:
-            x_, y_, z_ = self.nodenum_to_coord(p)
-            path_coordinates.append((x_, y_, z_))
-
-        for i in range(len(path_coordinates)):
-            if i == 0 or i == len(path_coordinates)-1:
-                # nop
-                pass
-            else:
-                vec_1_x = path_coordinates[i][0] - path_coordinates[i-1][0]
-                vec_1_y = path_coordinates[i][1] - path_coordinates[i-1][1]
-                vec_1_z = path_coordinates[i][2] - path_coordinates[i-1][2]
-                vec_1 = (vec_1_x, vec_1_y, vec_1_z)
-
-                vec_2_x = path_coordinates[i+1][0] - path_coordinates[i][0]
-                vec_2_y = path_coordinates[i+1][1] - path_coordinates[i][1]
-                vec_2_z = path_coordinates[i+1][2] - path_coordinates[i][2]
-                vec_2 = (vec_2_x, vec_2_y, vec_2_z)
-
-                if vec_1 != vec_2:
-                    corner_count += 1
-    
-        return corner_count
