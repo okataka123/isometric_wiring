@@ -34,33 +34,36 @@ class Graph_2d:
 
 
 class Graph_3d:
-    def __init__(
-            self, 
-            grid_size: int, 
-            ):
+    def __init__(self, grid_size):
+        if isinstance(grid_size, (tuple, list)):
+            n_x, n_y, n_z = grid_size
+        else:
+            n_x = n_y = n_z = grid_size
+        self.n_x = n_x
+        self.n_y = n_y
+        self.n_z = n_z
+        self.N = n_x * n_y * n_z
         self.grid_size = grid_size
         self.obs = self.generate_obstacle_nodes_3d(obs_size=3)
         self.to = self.make_to()
         self.to_without_obs = self.make_to_without_obs()
 
 
-
     def make_to(self) -> List[List[int]]:
         """
         グラフ構造の定義（3次元格子グラフ）
         """
-        n = self.grid_size  # 各軸方向のサイズ（n×n×n）
-        to = [[] for _ in range(n * n * n)]  # 隣接リスト
+        to = [[] for _ in range(self.N)]  # 隣接リスト
 
-        for i in range(n * n * n):
+        for i in range(self.N):
             # nodenum → (x, y, z) に変換
-            z = i // (n * n)
-            rem = i % (n * n)
-            y = rem // n
-            x = rem % n
+            z = i // (self.n_x * self.n_y)
+            rem = i % (self.n_x * self.n_y)
+            y = rem // self.n_x
+            x = rem % self.n_x
 
             # +x 方向
-            if x + 1 < n:
+            if x + 1 < self.n_x:
                 if not i+1 in self.obs:
                     to[i].append(i + 1)
             # -x 方向
@@ -68,58 +71,57 @@ class Graph_3d:
                 if not i-1 in self.obs:
                     to[i].append(i - 1)
             # +y 方向
-            if y + 1 < n:
-                if not i+n in self.obs:
-                    to[i].append(i + n)
+            if y + 1 < self.n_y:
+                if not i+self.n_x in self.obs:
+                    to[i].append(i + self.n_x)
             # -y 方向
             if y - 1 >= 0:
-                if not i-n in self.obs:
-                    to[i].append(i - n)
+                if not i-self.n_x in self.obs:
+                    to[i].append(i - self.n_x)
             # +z 方向
-            if z + 1 < n:
-                if not i + n*n in self.obs:
-                    to[i].append(i + n * n)
+            if z + 1 < self.n_z:
+                if not i+self.n_x*self.n_y in self.obs:
+                    to[i].append(i + self.n_x * self.n_y)
             # -z 方向
             if z - 1 >= 0:
-                if not i - n*n in self.obs:
-                    to[i].append(i - n * n)
+                if not i - self.n_x*self.n_y in self.obs:
+                    to[i].append(i - self.n_x * self.n_y)
         return to
 
 
-    def make_to_without_obs(self):
+    def make_to_without_obs(self) -> List[List[int]]:
         """
         グラフ構造の定義（3次元格子グラフ）
         """
-        n = self.grid_size # 各軸方向のサイズ（n×n×n）
-        to_without_obs = [[] for _ in range(n * n * n)]  # 隣接リスト
+        # n = self.grid_size # 各軸方向のサイズ（n×n×n）
+        to_without_obs = [[] for _ in range(self.N)]  # 隣接リスト
 
-        for i in range(n * n * n):
+        for i in range(self.N):
             # nodenum → (x, y, z) に変換
-            z = i // (n * n)
-            rem = i % (n * n)
-            y = rem // n
-            x = rem % n
+            z = i // (self.n_x * self.n_y)
+            rem = i % (self.n_x * self.n_y)
+            y = rem // self.n_x
+            x = rem % self.n_x
 
             # +x 方向
-            if x + 1 < n:
+            if x + 1 < self.n_x:
                 to_without_obs[i].append(i + 1)
             # -x 方向
             if x - 1 >= 0:
                 to_without_obs[i].append(i - 1)
             # +y 方向
-            if y + 1 < n:
-                to_without_obs[i].append(i + n)
+            if y + 1 < self.n_y:
+                to_without_obs[i].append(i + self.n_x)
             # -y 方向
             if y - 1 >= 0:
-                to_without_obs[i].append(i - n)
+                to_without_obs[i].append(i - self.n_x)
             # +z 方向
-            if z + 1 < n:
-                to_without_obs[i].append(i + n * n)
+            if z + 1 < self.n_z:
+                to_without_obs[i].append(i + self.n_x * self.n_y)
             # -z 方向
             if z - 1 >= 0:
-                to_without_obs[i].append(i - n * n)
+                to_without_obs[i].append(i - self.n_x * self.n_y)
         return to_without_obs
-
 
 
     def generate_obstacle_nodes_3d(self, obs_size=3, is_random=False):
@@ -132,11 +134,11 @@ class Graph_3d:
         Returns:
             obs (list[int]): 障害物ノードのリスト
         """
-        if self.grid_size <= 3: assert False, "グリッドサイズが小さすぎます。"
+        if min(self.n_x, self.n_y, self.n_z) <= 3: assert False, "グリッドサイズが小さすぎます。"
         obs = []
 
         if is_random:
-            basepoint = [random.randint(0, self.grid_size**3-1) for _ in range(n_obs)]
+            basepoint = [random.randint(0, self.N-1) for _ in range(n_obs)]
         else:
             # basepoint = [445]
             # basepoint = [11]
@@ -151,12 +153,12 @@ class Graph_3d:
             # 障害物ノードが連結になるかの確認
             bp_x, bp_y, bp_z = self.nodenum_to_coord(bp)
             print(f'(bp_x, bp_y, bp_z) = ({bp_x}, {bp_y}, {bp_z})')
-            cond = (self.grid_size-bp_x >= obs_size) & (self.grid_size-bp_y >= obs_size) & (self.grid_size-bp_z >= obs_size)        
+            cond = (self.n_x-bp_x >= obs_size) & (self.n_y-bp_y >= obs_size) & (self.n_z-bp_z >= obs_size)
             if not cond: continue
             for layer in range(obs_size):
                 for row in range(obs_size):
                     for col in range(obs_size):
-                        add_point = bp + layer*self.grid_size*self.grid_size + row*self.grid_size + col
+                        add_point = bp + layer*self.n_y*self.n_x + row*self.n_x + col
                         # print('add_point =', add_point)
                         obs.append(add_point)
 
@@ -166,15 +168,15 @@ class Graph_3d:
 
 
     def coord_to_nodenum(self, x, y, z):
-        nodenum = self.grid_size * self.grid_size*z + self.grid_size*y + x
+        nodenum = self.n_y*self.n_x*z + self.n_x*y + x
         return nodenum
 
 
     def nodenum_to_coord(self, nodenum):
-        z = nodenum // (self.grid_size * self.grid_size)
-        rem = nodenum % (self.grid_size * self.grid_size)
-        y = rem // self.grid_size
-        x = rem % self.grid_size
+        z = nodenum // (self.n_y * self.n_x)
+        rem = nodenum % (self.n_y * self.n_x)
+        y = rem // self.n_x
+        x = rem % self.n_x
         return x, y, z
     
 
