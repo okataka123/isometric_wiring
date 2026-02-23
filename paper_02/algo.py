@@ -149,8 +149,9 @@ class Algo:
                     # 経路生成 → 評価
                     path = self._generate_path(start, goal, pheromones[i], occupied)
 
-                    # # for debug
-                    # print(f"start = {start}, goal = {goal}")
+                    # for debug 20260217
+                    print(f"start = {start}, goal = {goal}")
+                    print(f'path = {path}')
 
                     if path:
                         match self.algo_name:

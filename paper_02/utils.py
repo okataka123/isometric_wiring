@@ -1,4 +1,5 @@
 from heapq import *
+from typing import List
 
 def dijkstra(start, n, to):
     prevs = [0 for _ in range(n*n)]
@@ -29,3 +30,43 @@ def get_path(s, v, prevs):
         v = prevs[v]
         if v == s:
             return path
+        
+# ===========================================================================
+def full_search_path(
+        n, 
+        to : List[List[int]], 
+        start: int, 
+        goal: int,
+        limit: int,
+        ):
+    """
+    頂点vからスタートし、事前に決めたゴール地点に長さLで進める経路をすべて列挙する。
+    """
+    if isinstance(n, (tuple, list)):
+        n_x, n_y, n_z = n
+    else:
+        n_x = n_y = n_z = n
+    N = n_x * n_y * n_z
+
+    used = [False for _ in range(N)]
+    path = []
+    anss = []
+
+    def dfs(v):
+        path.append(v)
+        used[v] = True    
+        if len(path) >= limit:
+            if path[-1] == goal:
+                anss.append(path.copy())
+            path.remove(v)
+            used[v] = False
+            return 
+        for u in to[v]:
+            if not used[u]:
+                dfs(u)
+        path.remove(v)
+        used[v] = False
+
+    dfs(start)
+
+    return anss
