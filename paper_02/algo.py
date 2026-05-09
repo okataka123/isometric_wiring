@@ -13,14 +13,16 @@ class Algo:
     
 
     # --- 評価関数（3目的の加重平均）---
-    def _evaluate_path(self, path, best_paths):
+    def _evaluate_path(self, path: list[int], best_paths: list[list[int]]):
         """
-        目的関数（論文実装）
+        今のアリが生成したpathに対する目的関数の値を計算する（論文実装）
+        3目的（経路長・交差数・長さ整合）の線形加重和により計算。
 
-        - 経路長
-        - 交差数
-        - 長さ整合
-
+        Args:
+            path (list[int]): 今のアリのpath 
+            best_paths (list[list[int]]): それぞれのコロニーにおける（現状の）最良経路たちの集合
+        Returns:   
+            score (float): 今のアリのpathが生成した目的関数の値
         """
         # # for debug
         # print('len(best_paths) =', len(best_paths))
@@ -40,15 +42,16 @@ class Algo:
         return score
     
 
-    def _evaluate_path_cumtom_1(self, path, best_paths):
+    def _evaluate_path_cumtom_1(self, path: list[int], best_paths: list[list[int]]):
         """
         カスタム目的関数その1。
         「曲げ回数の最小化」も目的関数に含めた。
     
-        - 経路長
-        - 交差数
-        - 長さ整合
-        - 曲げ回数
+        Args:
+            path (list[int]): 今のアリのpath 
+            best_paths (list[list[int]]): それぞれのコロニーにおける（現状の）最良経路たちの集合
+        Returns:   
+            score (float): 今のアリのpathに対する目的関数の値
         """
         length = len(path)
         # 他の経路と交差したノード数
@@ -87,8 +90,21 @@ class Algo:
 
 
 
-    # --- 経路生成関数（ACO風ランダム探索） ---W
+    # --- 経路生成関数（ACO風ランダム探索） ---
     def _generate_path(self, start, goal, pheromone, occupied, alpha=2, beta=2):
+        """
+        或るコロニーの或るアリの生成するpathを算出する。
+
+        Args:
+            start (int): スタート地点のnode番号
+            goal (int): ゴール地点のnode番号
+            pheromone (np.ndarray): 各ノードのフェロモン。pheromone[node]のようにアクセスする。
+            occupied (np.ndarray): 占領済みのノードを記録しておくarray
+            alpha (int): ACOのハイパラ
+            beta (int): ACOのハイパラ
+        Returns:
+            path (list[int]): 経路
+        """
         current = start
         path = [current]
         visited = set([current])
@@ -115,6 +131,20 @@ class Algo:
 
     # --- ACOによる等長・非交差ルーティング本体 ---
     def equal_length_routing(self, pairs, max_iter=100, num_ants=30, w1=10, w2=45, w3=45, w4=None):
+        """
+        ACOによる等長・非交差ルーティング本体（main処理）
+
+        Args:
+            pairs (list[tuple[int, int]]): 各配線のスタート地点・ゴール地点のペアの配列。
+            max_iter (int): 最大イテレーション回数
+            num_ants (int): 各コロニーのアリ数
+            w1 (int): 目的関数1の重み
+            w2 (int): 目的関数2の重み
+            w3 (int): 目的関数3の重み
+            w4 (int | None): 目的関数4の重み
+        Returns:
+            best_paths (list[list[int]]): それぞれのコロニーにおける（現状の）最良経路たちの集合
+        """
         self.w1 = w1
         self.w2 = w2
         self.w3 = w3
@@ -152,6 +182,14 @@ class Algo:
                     # for debug 20260217
                     print(f"start = {start}, goal = {goal}")
                     print(f'path = {path}')
+
+                    # # for debug 20260509
+                    # print(f"[debug 20260509] len(best_paths) = {len(best_paths)}")
+                    # print(f"[debug 20260509] best_paths[0] = {best_paths[0]}")
+                    # print(f"[debug 20260509] best_paths[1] = {best_paths[1]}")
+                    # print(f"[debug 20260509] best_paths[2] = {best_paths[2]}")
+                    # print(f"[debug 20260509] path = {path}")
+                    # print(f"[debug 20260509] type(best_paths) = {type(best_paths)}")
 
                     if path:
                         match self.algo_name:
